@@ -1,0 +1,15 @@
+# Executables and binaries
+*.exe
+*.o
+*.obj
+*.out
+
+# IDE and tool configuration files
+.vscode/
+.clangd
+compile_flags.txt
+
+# Python & Jupyter cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
