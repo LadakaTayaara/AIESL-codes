@@ -1,7 +1,7 @@
 /*
- * Problem: Implementation of Minimax Algorithm for Tic-Tac-Toe Game
- * Subject: Artificial Intelligence and Expert Systems (AIES)
- * Algorithm: Adversarial Search (Minimax Algorithm)
+ * Problem: Tic-Tac-Toe using Minimax Algorithm
+ * Subject: AIES (SPPU)
+ * Symbols: Human = 'X', AI = 'O'
  */
 
 #include <iostream>
@@ -9,17 +9,9 @@
 
 using namespace std;
 
-// Symbols used on the board
-const char HUMAN = 'X';
-const char AI = 'O';
+char b[3][3];
 
-// Structure to hold row and column coordinates of a move
-struct Move {
-    int row, col;
-};
-
-// Function to display current state of the 3x3 board
-void printBoard(char b[3][3]) {
+void printBoard() {
     cout << "\n";
     for (int i = 0; i < 3; i++) {
         cout << " " << b[i][0] << " | " << b[i][1] << " | " << b[i][2] << " \n";
@@ -28,104 +20,56 @@ void printBoard(char b[3][3]) {
     cout << "\n";
 }
 
-// Check if any empty cell (' ') remains on the board
-bool isMovesLeft(char b[3][3]) {
+// Returns +10 if AI ('O') wins, -10 if Human ('X') wins, 0 otherwise
+int evaluate() {
     for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (b[i][j] == ' ') return true;
-        }
+        // Check Rows and Columns
+        if (b[i][0] != ' ' && b[i][0] == b[i][1] && b[i][1] == b[i][2])
+            return (b[i][0] == 'O') ? 10 : -10;
+        if (b[0][i] != ' ' && b[0][i] == b[1][i] && b[1][i] == b[2][i])
+            return (b[0][i] == 'O') ? 10 : -10;
     }
-    return false;
-}
+    // Check Diagonals
+    if (b[0][0] != ' ' && b[0][0] == b[1][1] && b[1][1] == b[2][2])
+        return (b[0][0] == 'O') ? 10 : -10;
+    if (b[0][2] != ' ' && b[0][2] == b[1][1] && b[1][1] == b[2][0])
+        return (b[0][2] == 'O') ? 10 : -10;
 
-// Utility / Evaluation function:
-// Returns +10 if AI wins, -10 if Human wins, 0 if no winner yet
-int evaluate(char b[3][3]) {
-    // Check rows for a win
-    for (int i = 0; i < 3; i++) {
-        if (b[i][0] != ' ' && b[i][0] == b[i][1] && b[i][1] == b[i][2]) {
-            return (b[i][0] == AI) ? +10 : -10;
-        }
-    }
-
-    // Check columns for a win
-    for (int j = 0; j < 3; j++) {
-        if (b[0][j] != ' ' && b[0][j] == b[1][j] && b[1][j] == b[2][j]) {
-            return (b[0][j] == AI) ? +10 : -10;
-        }
-    }
-
-    // Check primary diagonal (top-left to bottom-right)
-    if (b[0][0] != ' ' && b[0][0] == b[1][1] && b[1][1] == b[2][2]) {
-        return (b[0][0] == AI) ? +10 : -10;
-    }
-
-    // Check secondary diagonal (top-right to bottom-left)
-    if (b[0][2] != ' ' && b[0][2] == b[1][1] && b[1][1] == b[2][0]) {
-        return (b[0][2] == AI) ? +10 : -10;
-    }
-
-    // No winner yet
     return 0;
 }
 
-// Recursive Minimax function
-// depth: current depth in game tree (used to prefer faster wins / slower losses)
-// isMax: true when it is AI's turn (Maximizer), false when Human's turn (Minimizer)
-int minimax(char b[3][3], int depth, bool isMax) {
-    int score = evaluate(b);
+// Unified Minimax: AI maximizes ('O'), Human minimizes ('X')
+int minimax(bool isAI) {
+    int score = evaluate();
+    if (score != 0) return score;
 
-    // BASE CASES:
-    // AI won: prefer win in fewer moves (higher score)
-    if (score == 10) return score - depth;
-
-    // Human won: prefer loss in more moves (delay defeat)
-    if (score == -10) return score + depth;
-
-    // No moves left: Draw (tie)
-    if (!isMovesLeft(b)) return 0;
-
-    // RECURSIVE CASES:
-    if (isMax) {
-        // Maximizer's turn (AI wants to maximize score)
-        int best = -1000;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if (b[i][j] == ' ') {
-                    b[i][j] = AI; // Make move
-                    best = max(best, minimax(b, depth + 1, false));
-                    b[i][j] = ' '; // Undo move (Backtrack)
-                }
-            }
-        }
-        return best;
-    } else {
-        // Minimizer's turn (Human wants to minimize score)
-        int best = 1000;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if (b[i][j] == ' ') {
-                    b[i][j] = HUMAN; // Make move
-                    best = min(best, minimax(b, depth + 1, true));
-                    b[i][j] = ' '; // Undo move (Backtrack)
-                }
-            }
-        }
-        return best;
-    }
-}
-
-// Evaluates all available moves for AI and returns the optimal move
-Move findBestMove(char b[3][3]) {
-    int bestVal = -1000;
-    Move bestMove = {-1, -1};
+    bool movesLeft = false;
+    int best = isAI ? -1000 : 1000;
 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             if (b[i][j] == ' ') {
-                b[i][j] = AI; // Try move
-                int moveVal = minimax(b, 0, false);
-                b[i][j] = ' '; // Undo move
+                movesLeft = true;
+                b[i][j] = isAI ? 'O' : 'X';
+                int val = minimax(!isAI);
+                b[i][j] = ' ';
+                best = isAI ? max(best, val) : min(best, val);
+            }
+        }
+    }
+    return movesLeft ? best : 0;
+}
+
+pair<int, int> findBestMove() {
+    int bestVal = -1000;
+    pair<int, int> bestMove = {-1, -1};
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (b[i][j] == ' ') {
+                b[i][j] = 'O';
+                int moveVal = minimax(false);
+                b[i][j] = ' ';
 
                 if (moveVal > bestVal) {
                     bestVal = moveVal;
@@ -138,64 +82,51 @@ Move findBestMove(char b[3][3]) {
 }
 
 int main() {
-    // Initialize 3x3 board with spaces
-    char board[3][3] = {
-        {' ', ' ', ' '},
-        {' ', ' ', ' '},
-        {' ', ' ', ' '}
-    };
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++) b[i][j] = ' ';
 
     cout << "=== Tic-Tac-Toe using Minimax AI ===\n";
     cout << "Grid reference positions:\n";
-    cout << " 1 | 2 | 3 \n";
-    cout << "---|---|---\n";
-    cout << " 4 | 5 | 6 \n";
-    cout << "---|---|---\n";
-    cout << " 7 | 8 | 9 \n\n";
+    cout << " 1 | 2 | 3 \n---|---|---\n 4 | 5 | 6 \n---|---|---\n 7 | 8 | 9 \n\n";
 
     char choice;
     cout << "Do you want to play first? (y/n): ";
     cin >> choice;
     bool humanTurn = (choice == 'y' || choice == 'Y');
 
-    // Main game loop: continue while moves are left and no winner exists
-    while (isMovesLeft(board) && evaluate(board) == 0) {
+    while (evaluate() == 0) {
+        bool movesLeft = false;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                if (b[i][j] == ' ') movesLeft = true;
+        if (!movesLeft) break;
+
         if (humanTurn) {
             int move;
             cout << "Enter your move (1-9): ";
             cin >> move;
+            int r = (move - 1) / 3, c = (move - 1) % 3;
 
-            // Convert 1-9 cell number to 2D row and column indices
-            int r = (move - 1) / 3;
-            int c = (move - 1) % 3;
-
-            // Validate move
-            if (move < 1 || move > 9 || board[r][c] != ' ') {
+            if (move < 1 || move > 9 || b[r][c] != ' ') {
                 cout << "Invalid move! Please try an empty cell between 1 and 9.\n";
                 continue;
             }
-
-            board[r][c] = HUMAN;
+            b[r][c] = 'X';
         } else {
             cout << "AI is calculating optimal move...\n";
-            Move best = findBestMove(board);
-            board[best.row][best.col] = AI;
-            cout << "AI plays at position " << (best.row * 3 + best.col + 1) << ":\n";
+            pair<int, int> best = findBestMove();
+            b[best.first][best.second] = 'O';
+            cout << "AI plays at position " << (best.first * 3 + best.second + 1) << ":\n";
         }
 
-        printBoard(board);
-        humanTurn = !humanTurn; // Switch turn
+        printBoard();
+        humanTurn = !humanTurn;
     }
 
-    // Check and display the final game outcome
-    int finalScore = evaluate(board);
-    if (finalScore == 10) {
-        cout << "Result: AI wins!\n";
-    } else if (finalScore == -10) {
-        cout << "Result: You win!\n";
-    } else {
-        cout << "Result: It's a draw!\n";
-    }
+    int finalScore = evaluate();
+    if (finalScore == 10) cout << "Result: AI wins!\n";
+    else if (finalScore == -10) cout << "Result: You win!\n";
+    else cout << "Result: It's a draw!\n";
 
     return 0;
 }

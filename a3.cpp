@@ -1,121 +1,87 @@
 /*
- * Problem: Cryptarithmetic Puzzle Solver using Constraint Satisfaction Problem (CSP)
- * Subject: Artificial Intelligence and Expert Systems (AIES)
+ * Problem: Cryptarithmetic Puzzle Solver using CSP (Backtracking)
+ * Subject: AIES (SPPU)
  * Example: SEND + MORE = MONEY
  */
 
 #include <iostream>
-#include <string>
 #include <vector>
-#include <set>
-#include <map>
+#include <string>
 
 using namespace std;
 
-// Global variables for CSP solver
-string word1, word2, resultWord;
-vector<char> uniqueChars;
-map<char, int> charToDigit;
-bool digitUsed[10] = {false};
+string w1, w2, w3;
+vector<char> letters;
+int digit[256];
+bool used[10];
 
-// Converts a word to its numerical value using current charToDigit mapping
-long long getWordValue(const string& word) {
-    long long num = 0;
-    for (char c : word) {
-        num = num * 10 + charToDigit[c];
-    }
-    return num;
+// Convert word to number using current digit assignments
+long long getVal(const string &s) {
+    long long val = 0;
+    for (char c : s) val = val * 10 + digit[c];
+    return val;
 }
 
-// Recursive Backtracking function for CSP
-bool solveCSP(int index) {
-    // BASE CASE: All unique characters assigned a digit
-    if (index == uniqueChars.size()) {
-        // Constraint 1: Leading letter cannot be '0'
-        if (charToDigit[word1[0]] == 0 || charToDigit[word2[0]] == 0 || charToDigit[resultWord[0]] == 0) {
-            return false;
-        }
-
-        // Constraint 2: word1 + word2 must equal resultWord
-        long long val1 = getWordValue(word1);
-        long long val2 = getWordValue(word2);
-        long long valResult = getWordValue(resultWord);
-
-        if (val1 + val2 == valResult) {
-            cout << "\n=== Solution Found! ===" << endl;
-            cout << "Letter Assignments:" << endl;
-            for (auto pair : charToDigit) {
-                cout << pair.first << " = " << pair.second << endl;
-            }
-            cout << "\nEquation Verification:" << endl;
-            cout << "  " << word1 << " (" << val1 << ")" << endl;
-            cout << "+ " << word2 << " (" << val2 << ")" << endl;
-            cout << "-----------------" << endl;
-            cout << "= " << resultWord << " (" << valResult << ")" << endl;
-            return true;
-        }
-        return false;
+// Backtracking function to assign digits to letters
+bool solve(int idx) {
+    // Base Case: all letters assigned
+    if (idx == letters.size()) {
+        // Leading letters cannot be 0
+        if (digit[w1[0]] == 0 || digit[w2[0]] == 0 || digit[w3[0]] == 0) return false;
+        return getVal(w1) + getVal(w2) == getVal(w3);
     }
 
-    // RECURSIVE CASE: Try assigning digits 0-9 to uniqueChars[index]
-    char currentChar = uniqueChars[index];
-    for (int digit = 0; digit <= 9; digit++) {
-        // Constraint 3: Digit must be unique (all-different constraint)
-        if (!digitUsed[digit]) {
-            charToDigit[currentChar] = digit;
-            digitUsed[digit] = true;
+    // Try assigning available digits 0-9
+    for (int d = 0; d <= 9; d++) {
+        if (!used[d]) {
+            used[d] = true;
+            digit[letters[idx]] = d;
 
-            if (solveCSP(index + 1)) {
-                return true;
-            }
+            if (solve(idx + 1)) return true;
 
-            // Undo assignment (Backtrack)
-            digitUsed[digit] = false;
+            used[d] = false; // Backtrack
         }
     }
-
-    return false; // Backtrack
-}
-
-// Main solving function containing setup, input reading, and CSP invocation
-void solve() {
-    cout << "=== Cryptarithmetic CSP Solver ===" << endl;
-    cout << "Enter Word 1: ";
-    cin >> word1;
-    cout << "Enter Word 2: ";
-    cin >> word2;
-    cout << "Enter Result Word: ";
-    cin >> resultWord;
-
-    // Reset data structures
-    uniqueChars.clear();
-    charToDigit.clear();
-    for (int i = 0; i < 10; i++) digitUsed[i] = false;
-
-    // Collect all unique letters across all 3 words
-    set<char> charSet;
-    for (char c : word1) charSet.insert(c);
-    for (char c : word2) charSet.insert(c);
-    for (char c : resultWord) charSet.insert(c);
-
-    for (char c : charSet) {
-        uniqueChars.push_back(c);
-    }
-
-    // Domain constraint: Maximum 10 unique letters (digits 0-9 available)
-    if (uniqueChars.size() > 10) {
-        cout << "Error: More than 10 unique letters! Impossible to assign unique digits (0-9)." << endl;
-        return;
-    }
-
-    cout << "\nSolving: " << word1 << " + " << word2 << " = " << resultWord << " ..." << endl;
-
-    if (!solveCSP(0)) {
-        cout << "No solution exists for this cryptarithmetic puzzle." << endl;
-    }
+    return false;
 }
 
 int main() {
-    solve();
+    cout << "=== Cryptarithmetic CSP Solver ===\n";
+    cout << "Enter Word 1: ";
+    cin >> w1;
+    cout << "Enter Word 2: ";
+    cin >> w2;
+    cout << "Enter Result Word: ";
+    cin >> w3;
+
+    // Collect all unique characters
+    bool seen[256] = {false};
+    for (char c : w1 + w2 + w3) {
+        if (!seen[c]) {
+            seen[c] = true;
+            letters.push_back(c);
+        }
+    }
+
+    if (letters.size() > 10) {
+        cout << "Error: More than 10 unique letters! Cannot assign digits 0-9.\n";
+        return 0;
+    }
+
+    cout << "\nSolving: " << w1 << " + " << w2 << " = " << w3 << " ...\n";
+
+    if (solve(0)) {
+        cout << "\n=== Solution Found! ===\nLetter Assignments:\n";
+        for (char c : letters) cout << c << " = " << digit[c] << "\n";
+
+        cout << "\nEquation Verification:\n";
+        cout << "  " << w1 << " (" << getVal(w1) << ")\n";
+        cout << "+ " << w2 << " (" << getVal(w2) << ")\n";
+        cout << "-----------------\n";
+        cout << "= " << w3 << " (" << getVal(w3) << ")\n";
+    } else {
+        cout << "No solution exists for this cryptarithmetic puzzle.\n";
+    }
+
     return 0;
 }

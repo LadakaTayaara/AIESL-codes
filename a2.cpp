@@ -1,43 +1,62 @@
-#include <bits/stdc++.h>
+/*
+ * Problem: Traveling Salesperson Problem (TSP) using Hill Climbing
+ * Subject: AIES (SPPU)
+ */
+
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+
 using namespace std;
 
-int calcCost(vector<int> &tour, vector<vector<int>> &cost) {
-    int n = tour.size(), total = 0;
-    for (int i = 0; i < n - 1; i++) total += cost[tour[i]][tour[i+1]];
-    return total + cost[tour[n-1]][tour[0]];
-}
-
-int tspHillClimb(vector<vector<int>> &cost, int maxIter=10000) {
-    int n = cost.size();
-    vector<int> tour(n); iota(tour.begin(), tour.end(), 0);
-    random_shuffle(tour.begin()+1, tour.end()); // random start
-    int best = calcCost(tour, cost);
-
-    for (int k = 0; k < maxIter; k++) {
-        vector<int> newTour = tour;
-        int a = 1 + rand() % (n-1), b = 1 + rand() % (n-1); // avoid swapping start
-        swap(newTour[a], newTour[b]);
-        int newCost = calcCost(newTour, cost);
-        if (newCost < best) { tour = newTour; best = newCost; }
+// Calculate total tour cost returning to the start city
+int calcCost(const vector<int> &tour, const vector<vector<int>> &cost) {
+    int total = 0, n = tour.size();
+    for (int i = 0; i < n; i++) {
+        total += cost[tour[i]][tour[(i + 1) % n]];
     }
-    return best;
+    return total;
 }
 
 int main() {
     srand(time(0));
 
-    cout<<"Enter the number of variable\n";
     int n;
-    cin>>n;
-    vector<vector<int>> cost(n,vector<int>(n));
+    cout << "Enter the number of variables (cities):\n";
+    if (!(cin >> n)) return 0;
 
-    cout<<"Enter the data for adjacency matrix\n";
+    vector<vector<int>> cost(n, vector<int>(n));
+    cout << "Enter the data for adjacency matrix:\n";
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            cin >> cost[i][j];
 
-    for(int i=0;i<n;i++){
-        for(int j=0;j<n;j++){
-            cin>>cost[i][j];
+    // Initial tour: 0, 1, 2, ..., n-1
+    vector<int> tour(n);
+    for (int i = 0; i < n; i++) tour[i] = i;
+
+    int bestCost = calcCost(tour, cost);
+
+    // Hill Climbing: randomly swap two cities (excluding starting city 0)
+    for (int k = 0; k < 10000; k++) {
+        int a = 1 + rand() % (n - 1);
+        int b = 1 + rand() % (n - 1);
+        if (a == b) continue;
+
+        swap(tour[a], tour[b]);
+        int newCost = calcCost(tour, cost);
+
+        if (newCost < bestCost) {
+            bestCost = newCost; // Better neighbor found, accept move
+        } else {
+            swap(tour[a], tour[b]); // Undo swap
         }
     }
 
-    cout << "\ncost :" <<  tspHillClimb(cost) << endl;
+    cout << "\nBest Cost: " << bestCost << "\nBest Tour: ";
+    for (int city : tour) cout << city << " -> ";
+    cout << tour[0] << "\n";
+
+    return 0;
 }

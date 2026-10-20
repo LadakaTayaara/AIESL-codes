@@ -2,37 +2,23 @@
 
 using namespace std;
 
-class TowerOfHanoi {
-private:
-    int stepCount = 0;
+int stepCount = 0;
 
-public:
-    void solve(int n, char source, char destination, char auxiliary) {
-        if (n == 1) {
-            stepCount++;
-            cout << "Step " << stepCount << ": Move disk 1 from rod " 
-                 << source << " to rod " << destination << endl;
-            return;
-        }
-        
-        solve(n - 1, source, auxiliary, destination);
-        
-        stepCount++;
-        cout << "Step " << stepCount << ": Move disk " << n 
-             << " from rod " << source << " to rod " << destination << endl;
-        
-        solve(n - 1, auxiliary, destination, source);
-    }
-};
+void solveHanoi(int n, char from, char to, char aux) {
+    if (n == 0) return;
+    solveHanoi(n - 1, from, aux, to);
+    cout << "Step " << ++stepCount << ": Move disk " << n 
+         << " from rod " << from << " to rod " << to << "\n";
+    solveHanoi(n - 1, aux, to, from);
+}
 
 int main() {
-    int numDisks;
+    int n;
     cout << "Enter the number of disks for Tower of Hanoi: ";
-    cin >> numDisks;
-    
-    TowerOfHanoi toh;
-    cout << "\n--- State Space Moves (DFS) ---" << endl;
-    toh.solve(numDisks, 'A', 'C', 'B');
-    
+    if (!(cin >> n)) return 0;
+
+    cout << "\n--- State Space Moves (DFS) ---\n";
+    solveHanoi(n, 'A', 'C', 'B');
+
     return 0;
 }

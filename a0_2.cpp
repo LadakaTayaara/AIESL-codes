@@ -1,103 +1,67 @@
+/*
+ * Water Jug Problem using BFS
+ * Capacities: Jug 1 = 4L, Jug 2 = 3L
+ * Goal: Exactly 2L in Jug 1
+ */
+
 #include <iostream>
-#include <queue>
 #include <vector>
+#include <queue>
 #include <string>
 
 using namespace std;
 
-// Structure to represent (Jug1, Jug2) states
-struct JugState {
+struct State {
     int j1, j2;
-    string ruleApplied;
-    JugState* parent;
-};
-
-class WaterJug {
-    int max1 = 4; // Capacity of Jug 1
-    int max2 = 3; // Capacity of Jug 2
-    int target = 2; // Target volume in Jug 1
-
-public:
-    void printPath(JugState* goal) {
-        vector<JugState*> path;
-        for (JugState* cur = goal; cur != nullptr; cur = cur->parent) {
-            path.push_back(cur);
-        }
-        
-        cout << "\n--- State Space Search Path ---" << endl;
-        cout << "Format: (4L Jug, 3L Jug) - Rule Applied\n";
-        for (int i = path.size() - 1; i >= 0; --i) {
-            cout << "State (" << path[i]->j1 << ", " << path[i]->j2 << ") : " 
-                 << path[i]->ruleApplied << endl;
-        }
-    }
-
-    void solve() {
-        queue<JugState*> q;
-        bool visited[5][4] = {false}; // Max states are 0-4 for j1, 0-3 for j2
-
-        JugState* initial = new JugState{0, 0, "Initial State", nullptr};
-        q.push(initial);
-        visited[0][0] = true;
-
-        while (!q.empty()) {
-            JugState* curr = q.front();
-            q.pop();
-
-            // Goal State condition (2 Liters in the 4L jug)
-            if (curr->j1 == target) {
-                printPath(curr);
-                return;
-            }
-
-            // Define all production rules (state transitions)
-            // 1. Fill 4L Jug
-            if (curr->j1 < max1 && !visited[max1][curr->j2]) {
-                visited[max1][curr->j2] = true;
-                q.push(new JugState{max1, curr->j2, "Fill 4L Jug", curr});
-            }
-            // 2. Fill 3L Jug
-            if (curr->j2 < max2 && !visited[curr->j1][max2]) {
-                visited[curr->j1][max2] = true;
-                q.push(new JugState{curr->j1, max2, "Fill 3L Jug", curr});
-            }
-            // 3. Empty 4L Jug
-            if (curr->j1 > 0 && !visited[0][curr->j2]) {
-                visited[0][curr->j2] = true;
-                q.push(new JugState{0, curr->j2, "Empty 4L Jug", curr});
-            }
-            // 4. Empty 3L Jug
-            if (curr->j2 > 0 && !visited[curr->j1][0]) {
-                visited[curr->j1][0] = true;
-                q.push(new JugState{curr->j1, 0, "Empty 3L Jug", curr});
-            }
-            // 5. Pour from 3L to 4L
-            if (curr->j2 > 0 && curr->j1 < max1) {
-                int amount = min(curr->j2, max1 - curr->j1);
-                int next1 = curr->j1 + amount;
-                int next2 = curr->j2 - amount;
-                if (!visited[next1][next2]) {
-                    visited[next1][next2] = true;
-                    q.push(new JugState{next1, next2, "Pour 3L -> 4L", curr});
-                }
-            }
-            // 6. Pour from 4L to 3L
-            if (curr->j1 > 0 && curr->j2 < max2) {
-                int amount = min(curr->j1, max2 - curr->j2);
-                int next1 = curr->j1 - amount;
-                int next2 = curr->j2 + amount;
-                if (!visited[next1][next2]) {
-                    visited[next1][next2] = true;
-                    q.push(new JugState{next1, next2, "Pour 4L -> 3L", curr});
-                }
-            }
-        }
-    }
+    vector<pair<string, pair<int, int>>> path;
 };
 
 int main() {
-    cout << "Starting Water Jug Problem...\n";
-    WaterJug wj;
-    wj.solve();
+    int max1 = 4, max2 = 3, target = 2;
+    queue<State> q;
+    bool vis[5][4] = {false};
+
+    q.push({0, 0, {{"Initial State", {0, 0}}}});
+    vis[0][0] = true;
+
+    while (!q.empty()) {
+        State cur = q.front();
+        q.pop();
+
+        // Goal condition: 2 Liters in 4L jug
+        if (cur.j1 == target) {
+            cout << "\n--- State Space Search Path ---\n";
+            cout << "Format: (4L Jug, 3L Jug) - Rule Applied\n";
+            for (auto &step : cur.path) {
+                cout << "State (" << step.second.first << ", " << step.second.second << ") : " 
+                     << step.first << "\n";
+            }
+            return 0;
+        }
+
+        int j1 = cur.j1, j2 = cur.j2;
+
+        // 6 Production Rules: Fill, Empty, Pour
+        vector<pair<string, pair<int, int>>> nextMoves = {
+            {"Fill 4L Jug",   {max1, j2}},
+            {"Fill 3L Jug",   {j1, max2}},
+            {"Empty 4L Jug",  {0, j2}},
+            {"Empty 3L Jug",  {j1, 0}},
+            {"Pour 3L -> 4L", {j1 + min(j2, max1 - j1), j2 - min(j2, max1 - j1)}},
+            {"Pour 4L -> 3L", {j1 - min(j1, max2 - j2), j2 + min(j1, max2 - j2)}}
+        };
+
+        for (auto &mv : nextMoves) {
+            int nj1 = mv.second.first, nj2 = mv.second.second;
+            if (!vis[nj1][nj2]) {
+                vis[nj1][nj2] = true;
+                vector<pair<string, pair<int, int>>> newPath = cur.path;
+                newPath.push_back(mv);
+                q.push({nj1, nj2, newPath});
+            }
+        }
+    }
+
+    cout << "No solution found.\n";
     return 0;
 }

@@ -1,96 +1,70 @@
+/*
+ * Missionaries and Cannibals Problem using BFS
+ * State: (m, c, b)
+ * m: Missionaries on left bank (0-3)
+ * c: Cannibals on left bank (0-3)
+ * b: Boat on left bank (1 = Left, 0 = Right)
+ */
+
 #include <iostream>
-#include <queue>
 #include <vector>
+#include <queue>
 
 using namespace std;
 
-// Structure to represent a state in the state space
 struct State {
-  int m;         // Missionaries on left bank
-  int c;         // Cannibals on left bank
-  int b;         // Boat position: 1 for left bank, 0 for right bank
-  State *parent; // To trace the path
+    int m, c, b;
+    vector<State> path;
 };
 
-class MissionaryCannibal {
-public:
-  // Check if the current state is valid (no one gets eaten)
-  bool isValid(int m, int c) {
-    if (m < 0 || c < 0 || m > 3 || c > 3)
-      return false; // Out of bounds
-    if (m > 0 && m < c)
-      return false; // Left bank check
-    if (3 - m > 0 && (3 - m) < (3 - c))
-      return false; // Right bank check
+// Check if state is valid (missionaries never outnumbered on either bank)
+bool isValid(int m, int c) {
+    if (m < 0 || c < 0 || m > 3 || c > 3) return false;
+    if (m > 0 && m < c) return false;                 // Left bank check
+    if (3 - m > 0 && (3 - m) < (3 - c)) return false; // Right bank check
     return true;
-  }
+}
 
-  // Print the optimal path found by BFS
-  void printSolution(State *goal) {
-    vector<State *> path;
-    for (State *cur = goal; cur != nullptr; cur = cur->parent) {
-      path.push_back(cur);
-    }
+int main() {
+    queue<State> q;
+    bool vis[4][4][2] = {false};
 
-    cout << "\n--- Optimal State Space Path ---" << endl;
-    cout << "(M_Left, C_Left, Boat) -> (M_Right, C_Right)\n";
-    for (int i = path.size() - 1; i >= 0; --i) {
-      State *s = path[i];
-      string boatPos = (s->b == 1) ? "Left" : "Right";
-      cout << "State: (" << s->m << ", " << s->c << ", " << boatPos << ")  ->  "
-           << "(" << 3 - s->m << ", " << 3 - s->c << ")\n";
-    }
-  }
+    // Start with 3M, 3C, boat on left bank
+    q.push({3, 3, 1, {{3, 3, 1}}});
+    vis[3][3][1] = true;
 
-  void solve() {
-    queue<State *> q;
-    bool visited[4][4][2] = {false};
-
-    State *initial = new State{3, 3, 1, nullptr};
-    q.push(initial);
-    visited[3][3][1] = true;
-
-    // Possible moves: (1M, 0C), (2M, 0C), (0M, 1C), (0M, 2C), (1M, 1C)
+    // 5 possible boat moves: (1M,0C), (2M,0C), (0M,1C), (0M,2C), (1M,1C)
     int moves[5][2] = {{1, 0}, {2, 0}, {0, 1}, {0, 2}, {1, 1}};
 
     while (!q.empty()) {
-      State *curr = q.front();
-      q.pop();
+        State cur = q.front();
+        q.pop();
 
-      // Goal test
-      if (curr->m == 0 && curr->c == 0 && curr->b == 0) {
-        printSolution(curr);
-        return;
-      }
-
-      // Generate next states
-      for (int i = 0; i < 5; i++) {
-        int next_m, next_c, next_b;
-
-        if (curr->b == 1) { // Boat moving Left to Right
-          next_m = curr->m - moves[i][0];
-          next_c = curr->c - moves[i][1];
-          next_b = 0;
-        } else { // Boat moving Right to Left
-          next_m = curr->m + moves[i][0];
-          next_c = curr->c + moves[i][1];
-          next_b = 1;
+        // Goal: 0M, 0C, boat on right bank
+        if (cur.m == 0 && cur.c == 0 && cur.b == 0) {
+            cout << "\n--- Optimal State Space Path ---\n";
+            cout << "(M_Left, C_Left, Boat) -> (M_Right, C_Right)\n";
+            for (auto &s : cur.path) {
+                cout << "State: (" << s.m << ", " << s.c << ", " << (s.b ? "Left" : "Right")
+                     << ") -> (" << 3 - s.m << ", " << 3 - s.c << ")\n";
+            }
+            return 0;
         }
 
-        if (isValid(next_m, next_c) && !visited[next_m][next_c][next_b]) {
-          visited[next_m][next_c][next_b] = true;
-          State *nextState = new State{next_m, next_c, next_b, curr};
-          q.push(nextState);
+        for (auto &mv : moves) {
+            int nm = cur.b ? cur.m - mv[0] : cur.m + mv[0];
+            int nc = cur.b ? cur.c - mv[1] : cur.c + mv[1];
+            int nb = 1 - cur.b;
+
+            if (isValid(nm, nc) && !vis[nm][nc][nb]) {
+                vis[nm][nc][nb] = true;
+                vector<State> newPath = cur.path;
+                newPath.push_back({nm, nc, nb});
+                q.push({nm, nc, nb, newPath});
+            }
         }
-      }
     }
-    cout << "No solution found." << endl;
-  }
-};
 
-int main() {
-  cout << "Starting Missionaries and Cannibals State Space Search...\n";
-  MissionaryCannibal mc;
-  mc.solve();
-  return 0;
+    cout << "No solution found.\n";
+    return 0;
 }
