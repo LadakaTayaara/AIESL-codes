@@ -1,111 +1,59 @@
 #include <iostream>
-#include <vector>
 #include <queue>
-#include <set>
+#include <map>
+#include <vector>
 #include <cmath>
 
 using namespace std;
 
-const vector<vector<int>> GOAL = {
-    {1, 2, 3},
-    {4, 5, 6},
-    {7, 8, 0}
-};
-
-struct Node {
-    int f, g;
-    vector<vector<int>> b;
-    vector<vector<vector<int>>> path;
-
-    bool operator>(const Node &o) const {
-        return f > o.f;
-    }
-};
-
-int getManhattan(const vector<vector<int>> &b) {
+int getH(string s) {
     int h = 0;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            int val = b[i][j];
-            if (val != 0) {
-                int target_r = (val - 1) / 3;
-                int target_c = (val - 1) % 3;
-                h += abs(i - target_r) + abs(j - target_c);
-            }
+    for (int i = 0; i < 9; i++)
+        if (s[i] != '0') {
+            int v = s[i] - '1';
+            h += abs(i / 3 - v / 3) + abs(i % 3 - v % 3);
         }
-    }
     return h;
 }
 
-void printBoard(const vector<vector<int>> &b) {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (b[i][j] == 0) cout << "_ ";
-            else cout << b[i][j] << " ";
-        }
-        cout << "\n";
-    }
+void print(string s) {
+    for (int i = 0; i < 9; i++)
+        cout << (s[i] == '0' ? '_' : s[i]) << (i % 3 == 2 ? "\n" : " ");
     cout << "------\n";
 }
 
 int main() {
-    vector<vector<int>> start = {
-        {1, 2, 3},
-        {4, 0, 6},
-        {7, 5, 8}
-    };
+    string start = "123406758", goal = "123456780";
+    priority_queue<pair<int, string>> pq;
+    map<string, int> g;
+    map<string, string> parent;
 
-    cout << "8-Puzzle A* Algorithm Initialized.\n";
-    cout << "Initial Board State:\n";
-    printBoard(start);
-
-    priority_queue<Node, vector<Node>, greater<Node>> pq;
-    set<vector<vector<int>>> visited;
-
-    int h = getManhattan(start);
-    pq.push({h, 0, start, {start}});
-
-    int dr[] = {-1, 1, 0, 0};
-    int dc[] = {0, 0, -1, 1};
+    pq.push({-getH(start), start});
+    g[start] = 0;
 
     while (!pq.empty()) {
-        Node cur = pq.top();
+        string cur = pq.top().second;
         pq.pop();
 
-        if (cur.b == GOAL) {
-            cout << "\nOptimal Path Found in " << cur.g << " moves:\n\n";
-            for (int step = 0; step < cur.path.size(); step++) {
-                cout << "Step " << step << ":\n";
-                printBoard(cur.path[step]);
-            }
+        if (cur == goal) {
+            cout << "Solved in " << g[cur] << " moves!\n\n";
+            vector<string> path;
+            for (string s = goal; s != ""; s = parent[s]) path.push_back(s);
+            for (int i = path.size() - 1; i >= 0; i--) print(path[i]);
             return 0;
         }
 
-        if (visited.count(cur.b)) continue;
-        visited.insert(cur.b);
-
-        int zr = 0, zc = 0;
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                if (cur.b[i][j] == 0) { zr = i; zc = j; }
-
-        for (int i = 0; i < 4; i++) {
-            int nr = zr + dr[i], nc = zc + dc[i];
-            if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
-                auto nb = cur.b;
-                swap(nb[zr][zc], nb[nr][nc]);
-
-                if (!visited.count(nb)) {
-                    int ng = cur.g + 1;
-                    int nf = ng + getManhattan(nb);
-                    auto newPath = cur.path;
-                    newPath.push_back(nb);
-                    pq.push({nf, ng, nb, newPath});
-                }
+        int z = cur.find('0');
+        for (int m : {-3, 3, -1, 1}) {
+            int nz = z + m;
+            if (nz < 0 || nz > 8 || (m == -1 && z % 3 == 0) || (m == 1 && z % 3 == 2)) continue;
+            string nxt = cur;
+            swap(nxt[z], nxt[nz]);
+            if (!g.count(nxt) || g[cur] + 1 < g[nxt]) {
+                g[nxt] = g[cur] + 1;
+                parent[nxt] = cur;
+                pq.push({-(g[nxt] + getH(nxt)), nxt});
             }
         }
     }
-
-    cout << "No solution exists for this initial configuration.\n";
-    return 0;
 }

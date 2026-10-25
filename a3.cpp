@@ -1,87 +1,40 @@
-/*
- * Problem: Cryptarithmetic Puzzle Solver using CSP (Backtracking)
- * Subject: AIES (SPPU)
- * Example: SEND + MORE = MONEY
- */
-
 #include <iostream>
 #include <vector>
-#include <string>
-
 using namespace std;
 
 string w1, w2, w3;
-vector<char> letters;
-int digit[256];
+vector<char> ch;
+int d[128];
 bool used[10];
 
-// Convert word to number using current digit assignments
-long long getVal(const string &s) {
-    long long val = 0;
-    for (char c : s) val = val * 10 + digit[c];
-    return val;
+long long val(string s) {
+    long long v = 0;
+    for (char c : s) v = v * 10 + d[c];
+    return v;
 }
 
-// Backtracking function to assign digits to letters
-bool solve(int idx) {
-    // Base Case: all letters assigned
-    if (idx == letters.size()) {
-        // Leading letters cannot be 0
-        if (digit[w1[0]] == 0 || digit[w2[0]] == 0 || digit[w3[0]] == 0) return false;
-        return getVal(w1) + getVal(w2) == getVal(w3);
-    }
+bool solve(int i) {
+    if (i == ch.size())
+        return d[w1[0]] && d[w2[0]] && d[w3[0]] && val(w1) + val(w2) == val(w3);
 
-    // Try assigning available digits 0-9
-    for (int d = 0; d <= 9; d++) {
-        if (!used[d]) {
-            used[d] = true;
-            digit[letters[idx]] = d;
-
-            if (solve(idx + 1)) return true;
-
-            used[d] = false; // Backtrack
+    for (int dig = 0; dig < 10; dig++) {
+        if (!used[dig]) {
+            used[dig] = 1; d[ch[i]] = dig;
+            if (solve(i + 1)) return true;
+            used[dig] = 0;
         }
     }
     return false;
 }
 
 int main() {
-    cout << "=== Cryptarithmetic CSP Solver ===\n";
-    cout << "Enter Word 1: ";
-    cin >> w1;
-    cout << "Enter Word 2: ";
-    cin >> w2;
-    cout << "Enter Result Word: ";
-    cin >> w3;
-
-    // Collect all unique characters
-    bool seen[256] = {false};
-    for (char c : w1 + w2 + w3) {
-        if (!seen[c]) {
-            seen[c] = true;
-            letters.push_back(c);
-        }
-    }
-
-    if (letters.size() > 10) {
-        cout << "Error: More than 10 unique letters! Cannot assign digits 0-9.\n";
-        return 0;
-    }
-
-    cout << "\nSolving: " << w1 << " + " << w2 << " = " << w3 << " ...\n";
+    if (!(cin >> w1 >> w2 >> w3)) return 0;
+    bool seen[128] = {0};
+    for (char c : w1 + w2 + w3)
+        if (!seen[c]) { seen[c] = 1; ch.push_back(c); }
 
     if (solve(0)) {
-        cout << "\n=== Solution Found! ===\nLetter Assignments:\n";
-        for (char c : letters) cout << c << " = " << digit[c] << "\n";
-
-        cout << "\nEquation Verification:\n";
-        cout << "  " << w1 << " (" << getVal(w1) << ")\n";
-        cout << "+ " << w2 << " (" << getVal(w2) << ")\n";
-        cout << "-----------------\n";
-        cout << "= " << w3 << " (" << getVal(w3) << ")\n";
-    } else {
-        cout << "No solution exists for this cryptarithmetic puzzle.\n";
+        for (char c : ch) cout << c << "=" << d[c] << " ";
+        cout << "\n" << val(w1) << " + " << val(w2) << " = " << val(w3) << "\n";
     }
-
-    return 0;
 }
