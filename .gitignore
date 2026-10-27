@@ -3,6 +3,7 @@
 *.o
 *.obj
 *.out
+output/
 
 # IDE and tool configuration files
 .vscode/
