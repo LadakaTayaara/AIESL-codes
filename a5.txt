@@ -1,0 +1,238 @@
+/*
+ * Problem: Expert System using Rule-Based Knowledge Representation (Assignment 5)
+ * Tool / Platform: SWI-Prolog
+ *
+ * Description:
+ * A rule-based Expert System implemented in SWI-Prolog representing domain knowledge
+ * via Facts and Inference Rules. Includes:
+ * 1. Medical Diagnosis Expert System:
+ *    - Static Knowledge Base: Patient symptom records, disease diagnosis rules, and treatment advice.
+ *    - Interactive Expert System: Asks the user questions dynamically and deduces the illness.
+ * 2. Relational Knowledge Base:
+ *    - Classic Family Tree logic with recursive rules (ancestor, grandfather, siblings).
+ *
+ * How to Run in SWI-Prolog:
+ * -------------------------
+ * Method 1: Using SWI-Prolog Console / CLI
+ *   1. Start swipl in this folder:
+ *        swipl
+ *   2. Consult (load) this file:
+ *        ?- ['a5.txt'].
+ *      (Note the quotes and the period at the end!)
+ *
+ * Method 2: Renaming to .pl extension
+ *   If preferred, rename this file to a5.pl and run:
+ *        ?- [a5].
+ *
+ * Sample Queries to Try:
+ * ----------------------
+ * - Interactive diagnosis:
+ *     ?- consult_system.
+ *
+ * - Check diagnosis for an existing patient:
+ *     ?- consult_patient(john).
+ *     ?- consult_patient(mary).
+ *
+ * - Query disease diagnosis directly:
+ *     ?- diagnose(john, Disease).
+ *     ?- recommendation(covid19, Advice).
+ *
+ * - Family tree queries:
+ *     ?- father(john, Who).
+ *     ?- grandfather(john, Who).
+ *     ?- ancestor(john, diana).
+ *
+ * - Exit SWI-Prolog:
+ *     ?- halt.
+ */
+
+% =============================================================================
+% PART 1: MEDICAL DIAGNOSTIC EXPERT SYSTEM (STATIC KNOWLEDGE BASE)
+% =============================================================================
+
+% --- FACTS: Patient Symptoms ---
+% has_symptom(Patient, Symptom).
+
+has_symptom(john, fever).
+has_symptom(john, cough).
+has_symptom(john, fatigue).
+
+has_symptom(mary, fever).
+has_symptom(mary, headache).
+has_symptom(mary, body_ache).
+
+has_symptom(alex, fever).
+has_symptom(alex, chills).
+has_symptom(alex, sweating).
+
+has_symptom(susan, runny_nose).
+has_symptom(susan, sneezing).
+has_symptom(susan, sore_throat).
+
+has_symptom(david, high_fever).
+has_symptom(david, abdominal_pain).
+has_symptom(david, weakness).
+
+% --- RULES: Disease Diagnosis based on Patient Symptoms ---
+% diagnose(Patient, Disease) :- rules mapping symptom combinations to diseases.
+
+diagnose(Patient, covid19) :-
+    has_symptom(Patient, fever),
+    has_symptom(Patient, cough),
+    has_symptom(Patient, fatigue).
+
+diagnose(Patient, flu) :-
+    has_symptom(Patient, fever),
+    has_symptom(Patient, headache),
+    has_symptom(Patient, body_ache).
+
+diagnose(Patient, malaria) :-
+    has_symptom(Patient, fever),
+    has_symptom(Patient, chills),
+    has_symptom(Patient, sweating).
+
+diagnose(Patient, common_cold) :-
+    has_symptom(Patient, runny_nose),
+    has_symptom(Patient, sneezing),
+    has_symptom(Patient, sore_throat).
+
+diagnose(Patient, typhoid) :-
+    has_symptom(Patient, high_fever),
+    has_symptom(Patient, abdominal_pain),
+    has_symptom(Patient, weakness).
+
+% --- FACTS: Medical Advice & Treatment Recommendations ---
+% recommendation(Disease, Advice).
+
+recommendation(covid19, 'Isolate for 5-7 days, monitor oxygen levels, rest, and consult a physician.').
+recommendation(flu, 'Take paracetamol, drink plenty of warm fluids, and get ample bed rest.').
+recommendation(malaria, 'Consult a physician immediately for a blood test and antimalarial prescription.').
+recommendation(common_cold, 'Stay hydrated, take steam inhalation, and use throat lozenges.').
+recommendation(typhoid, 'Complete doctor-prescribed antibiotic course and drink boiled filtered water.').
+
+% --- HELPER RULE: Consult existing patient record ---
+consult_patient(Patient) :-
+    format('~n==========================================~n'),
+    format('  Diagnosis Report for: ~w~n', [Patient]),
+    format('==========================================~n'),
+    ( diagnose(Patient, Disease) ->
+        format('Identified Illness : ~w~n', [Disease]),
+        recommendation(Disease, Advice),
+        format('Recommended Action : ~w~n', [Advice])
+    ;
+        write('Result: No conclusive diagnosis matched existing records.'), nl
+    ),
+    format('==========================================~n').
+
+
+% =============================================================================
+% PART 2: INTERACTIVE EXPERT SYSTEM (DYNAMIC QUESTIONING)
+% =============================================================================
+
+% Dynamic predicate to store user responses during session
+:- dynamic known/2.
+
+% Ask user about a symptom, caching answer so we don't ask twice
+ask(Symptom) :-
+    known(Symptom, yes), !.
+ask(Symptom) :-
+    known(Symptom, no), !, fail.
+ask(Symptom) :-
+    format('Do you have ~w? (yes/no): ', [Symptom]),
+    read(Reply),
+    ( (Reply == yes ; Reply == y)
+    -> assertz(known(Symptom, yes))
+    ;  assertz(known(Symptom, no)), fail
+    ).
+
+% Hypothesis definitions for interactive consultation
+symptom(S) :- ask(S).
+
+hypothesis(covid19) :-
+    symptom(fever),
+    symptom(cough),
+    symptom(fatigue).
+
+hypothesis(flu) :-
+    symptom(fever),
+    symptom(headache),
+    symptom(body_ache).
+
+hypothesis(malaria) :-
+    symptom(fever),
+    symptom(chills),
+    symptom(sweating).
+
+hypothesis(common_cold) :-
+    symptom(runny_nose),
+    symptom(sneezing),
+    symptom(sore_throat).
+
+hypothesis(typhoid) :-
+    symptom(high_fever),
+    symptom(abdominal_pain),
+    symptom(weakness).
+
+% Main interactive consultation predicate
+consult_system :-
+    retractall(known(_, _)),
+    format('~n======================================================~n'),
+    format('       WELCOME TO MEDICAL EXPERT SYSTEM CONSULTANT    ~n'),
+    format('======================================================~n'),
+    write('Please answer each question with "yes." or "no." followed by a period.\n\n'),
+    ( hypothesis(Disease) ->
+        format('~n------------------------------------------------------~n'),
+        format(' Diagnosis : ~w~n', [Disease]),
+        recommendation(Disease, Advice),
+        format(' Advice    : ~w~n', [Advice]),
+        format('------------------------------------------------------~n')
+    ;
+        format('~n------------------------------------------------------~n'),
+        write(' Diagnosis : Unable to identify disease from given symptoms.\n'),
+        write(' Advice    : Please consult a doctor for further diagnostic tests.\n'),
+        format('------------------------------------------------------~n')
+    ),
+    retractall(known(_, _)).
+
+
+% =============================================================================
+% PART 3: RELATIONAL KNOWLEDGE BASE (FAMILY TREE / LOGIC RELATIONS)
+% =============================================================================
+
+% --- FACTS: Parent and Gender ---
+% parent(Parent, Child).
+parent(john, bob).
+parent(john, mary).
+parent(alice, bob).
+parent(alice, mary).
+parent(bob, charlie).
+parent(bob, diana).
+
+male(john).
+male(bob).
+male(charlie).
+
+female(alice).
+female(mary).
+female(diana).
+
+% --- RULES: Kinship & Inferences ---
+father(X, Y) :- parent(X, Y), male(X).
+mother(X, Y) :- parent(X, Y), female(X).
+child(X, Y)  :- parent(Y, X).
+
+sibling(X, Y) :-
+    parent(Z, X),
+    parent(Z, Y),
+    X \= Y.
+
+brother(X, Y) :- sibling(X, Y), male(X).
+sister(X, Y)  :- sibling(X, Y), female(X).
+
+grandfather(X, Y) :- parent(X, Z), parent(Z, Y), male(X).
+grandmother(X, Y) :- parent(X, Z), parent(Z, Y), female(X).
+
+% Recursive Ancestor Rule
+ancestor(X, Y) :- parent(X, Y).
+ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).
+
